@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Platform Governance Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      h1,
+      h2 {
+        color: #333;
+      }
+      .status {
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-weight: bold;
+      }
+      .status.connected {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .status.disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin: 5px 0;
+        box-sizing: border-box;
+      }
+      .proposal {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      .proposal-votes {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+      }
+      .vote-section {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .error {
+        color: #dc3545;
+        background-color: #f8d7da;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .success {
+        color: #155724;
+        background-color: #d4edda;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Platform Governance Test Interface</h1>
+
+    <div class="container">
+      <h2>Connection Status</h2>
+      <div id="connectionStatus" class="status disconnected">Not Connected</div>
+      <button onclick="connectWallet()" id="connectBtn">
+        Connect MetaMask
+      </button>
+      <div id="accountInfo" style="display: none">
+        <p><strong>Account:</strong> <span id="accountAddress"></span></p>
+        <p><strong>GRN Balance:</strong> <span id="grnBalance"></span> GRN</p>
+      </div>
+    </div>
+
+    <div class="container">
+      <h2>Create Proposal</h2>
+      <textarea
+        id="proposalDescription"
+        placeholder="Enter proposal description"
+        rows="4"
+      ></textarea>
+      <button onclick="createProposal()" id="createProposalBtn" disabled>
+        Create Proposal
+      </button>
+      <div id="createProposalResult"></div>
+    </div>
+
+    <div class="container">
+      <h2>Active Proposals</h2>
+      <button onclick="loadProposals()" id="loadProposalsBtn" disabled>
+        Load Proposals
+      </button>
+      <div id="proposalsList"></div>
+    </div>
+
+    <script>
+      const GOVERNANCE_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+      const GRN_TOKEN_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+
+      const GOVERNANCE_ABI = [
+        "function createProposal(string memory description) external returns (uint256)",
+        "function vote(uint256 proposalId, bool support) external",
+        "function executeProposal(uint256 proposalId) external",
+        "function getProposalState(uint256 proposalId) external view returns (uint8)",
+        "function proposals(uint256) external view returns (uint256 id, address proposer, string description, uint256 forVotes, uint256 againstVotes, uint256 startTime, uint256 endTime, uint8 state)",
+        "function proposalCount() external view returns (uint256)",
+        "function PROPOSAL_THRESHOLD() external view returns (uint256)",
+        "function VOTING_PERIOD() external view returns (uint256)",
+        "event ProposalCreated(uint256 indexed proposalId, address indexed proposer, string description)",
+        "event VoteCast(uint256 indexed proposalId, address indexed voter, bool support, uint256 votes)",
+      ]
+
+      const GRN_TOKEN_ABI = [
+        "function balanceOf(address owner) view returns (uint256)",
+        "function decimals() view returns (uint8)",
+      ]
+
+      let provider
+      let signer
+      let governanceContract
+      let grnTokenContract
+      let userAccount
+      let userVotedProposals = new Map()
+
+      async function connectWallet() {
+        try {
+          if (!window.ethereum) {
+            throw new Error("MetaMask not found!")
+          }
+
+          provider = new ethers.providers.Web3Provider(window.ethereum)
+          await provider.send("eth_requestAccounts", [])
+          signer = provider.getSigner()
+          userAccount = await signer.getAddress()
+
+          governanceContract = new ethers.Contract(
+            GOVERNANCE_ADDRESS,
+            GOVERNANCE_ABI,
+            signer
+          )
+          grnTokenContract = new ethers.Contract(
+            GRN_TOKEN_ADDRESS,
+            GRN_TOKEN_ABI,
+            provider
+          )
+
+          document.getElementById("connectionStatus").textContent = "Connected"
+          document.getElementById("connectionStatus").className =
+            "status connected"
+          document.getElementById("accountAddress").textContent = userAccount
+          document.getElementById("accountInfo").style.display = "block"
+          document.getElementById("connectBtn").disabled = true
+
+          document.getElementById("createProposalBtn").disabled = false
+          document.getElementById("loadProposalsBtn").disabled = false
+
+          await updateBalance()
+          await loadUserVotingHistory()
+
+          showSuccess("Successfully connected to MetaMask!")
+        } catch (error) {
+          showError("Failed to connect wallet: " + error.message)
+        }
+      }
+
+      async function updateBalance() {
+        try {
+          const balance = await grnTokenContract.balanceOf(userAccount)
+          const decimals = await grnTokenContract.decimals()
+          const formattedBalance = ethers.utils.formatUnits(balance, decimals)
+          document.getElementById("grnBalance").textContent = formattedBalance
+        } catch (error) {
+          console.error("Failed to get balance:", error)
+        }
+      }
+
+      async function loadUserVotingHistory() {
+        try {
+          userVotedProposals.clear()
+
+          const filter = governanceContract.filters.VoteCast(
+            null,
+            userAccount,
+            null,
+            null
+          )
+          const events = await governanceContract.queryFilter(filter)
+
+          events.forEach((event) => {
+            const proposalId = event.args.proposalId.toString()
+            const support = event.args.support
+            userVotedProposals.set(proposalId, support)
+          })
+        } catch (error) {
+          console.error("Failed to load voting history:", error)
+        }
+      }
+
+      async function createProposal() {
+        try {
+          const description = document
+            .getElementById("proposalDescription")
+            .value.trim()
+          if (!description) {
+            throw new Error("Please enter a proposal description")
+          }
+
+          showInfo("Creating proposal...")
+          const tx = await governanceContract.createProposal(description)
+          showInfo("Transaction sent. Waiting for confirmation...")
+
+          const receipt = await tx.wait()
+
+          const event = receipt.events.find(
+            (e) => e.event === "ProposalCreated"
+          )
+          const proposalId = event
+            ? event.args.proposalId.toString()
+            : "Unknown"
+
+          showSuccess(
+            `Proposal created successfully! Proposal ID: ${proposalId}`
+          )
+          document.getElementById("proposalDescription").value = ""
+
+          await loadProposals()
+        } catch (error) {
+          let errorMessage = "Failed to create proposal: "
+
+          if (error.message.includes("Insufficient GRN balance")) {
+            errorMessage +=
+              "You need at least 100 GRN tokens to create a proposal."
+          } else if (error.message.includes("user rejected transaction")) {
+            errorMessage += "Transaction was cancelled."
+          } else if (error.reason) {
+            errorMessage += error.reason
+          } else {
+            errorMessage += error.message
+          }
+
+          showError(errorMessage)
+        }
+      }
+
+      async function loadProposals() {
+        try {
+          if (userAccount) {
+            await loadUserVotingHistory()
+          }
+
+          const proposalCount = await governanceContract.proposalCount()
+          const proposalsList = document.getElementById("proposalsList")
+          proposalsList.innerHTML = ""
+
+          if (proposalCount.eq(0)) {
+            proposalsList.innerHTML = "<p>No proposals found.</p>"
+            return
+          }
+
+          for (let i = 1; i <= proposalCount.toNumber(); i++) {
+            try {
+              const proposal = await governanceContract.proposals(i)
+              const proposalDiv = createProposalElement(i, proposal)
+              proposalsList.appendChild(proposalDiv)
+            } catch (error) {
+              console.error(`Failed to load proposal ${i}:`, error)
+            }
+          }
+        } catch (error) {
+          showError("Failed to load proposals: " + error.message)
+        }
+      }
+
+      function createProposalElement(proposalId, proposal) {
+        const div = document.createElement("div")
+        div.className = "proposal"
+
+        const states = [
+          "Pending",
+          "Active",
+          "Defeated",
+          "Succeeded",
+          "Executed",
+        ]
+        const state = states[proposal.state] || "Unknown"
+
+        const forVotes = ethers.utils.formatEther(proposal.forVotes)
+        const againstVotes = ethers.utils.formatEther(proposal.againstVotes)
+
+        const startTime = new Date(
+          proposal.startTime.toNumber() * 1000
+        ).toLocaleString()
+        const endTime = new Date(
+          proposal.endTime.toNumber() * 1000
+        ).toLocaleString()
+
+        const hasUserVoted = userVotedProposals.has(proposalId.toString())
+        const userVoteDirection = userVotedProposals.get(proposalId.toString())
+        const votingPeriodEnded =
+          Date.now() > proposal.endTime.toNumber() * 1000
+        const canVote =
+          state === "Active" && !hasUserVoted && !votingPeriodEnded
+
+        let votingStatusText = ""
+        if (hasUserVoted) {
+          if (userVoteDirection === true) {
+            votingStatusText =
+              "<span style='color: #28a745; font-weight: bold;'>✅ You voted FOR this proposal</span>"
+          } else {
+            votingStatusText =
+              "<span style='color: #dc3545; font-weight: bold;'>❌ You voted AGAINST this proposal</span>"
+          }
+        } else if (votingPeriodEnded && state === "Active") {
+          votingStatusText =
+            "<span style='color: #ffc107; font-weight: bold;'>⏰ Voting period has ended</span>"
+        } else if (state !== "Active") {
+          votingStatusText =
+            "<span style='color: #6c757d; font-weight: bold;'>Voting not active</span>"
+        }
+
+        div.innerHTML = `
+                <h3>Proposal #${proposalId}</h3>
+                <p><strong>Description:</strong> ${proposal.description}</p>
+                <p><strong>Proposer:</strong> ${proposal.proposer}</p>
+                <p><strong>Status:</strong> ${state}</p>
+                <p><strong>Start Time:</strong> ${startTime}</p>
+                <p><strong>End Time:</strong> ${endTime}</p>
+                <div class="proposal-votes">
+                    <span><strong>For:</strong> ${forVotes} GRN</span>
+                    <span><strong>Against:</strong> ${againstVotes} GRN</span>
+                </div>
+                ${votingStatusText ? `<p>${votingStatusText}</p>` : ""}
+                ${
+                  state === "Active"
+                    ? `
+                    <div class="vote-section">
+                        <button onclick="vote(${proposalId}, true)" ${
+                        canVote ? "" : "disabled"
+                      }>Vote For</button>
+                        <button onclick="vote(${proposalId}, false)" ${
+                        canVote ? "" : "disabled"
+                      }>Vote Against</button>
+                        ${
+                          !canVote && hasUserVoted
+                            ? userVoteDirection
+                              ? "<span style='margin-left: 10px; color: #28a745;'>Voted FOR</span>"
+                              : "<span style='margin-left: 10px; color: #dc3545;'>Voted AGAINST</span>"
+                            : ""
+                        }
+                        ${
+                          !canVote && votingPeriodEnded
+                            ? "<span style='margin-left: 10px; color: #ffc107;'>Voting ended</span>"
+                            : ""
+                        }
+                    </div>
+                `
+                    : ""
+                }
+                ${
+                  state === "Active" && votingPeriodEnded
+                    ? `
+                    <button onclick="executeProposal(${proposalId})">Execute Proposal</button>
+                `
+                    : ""
+                }
+            `
+
+        return div
+      }
+
+      async function vote(proposalId, support) {
+        try {
+          showInfo(
+            `Submitting vote ${
+              support ? "FOR" : "AGAINST"
+            } proposal #${proposalId}...`
+          )
+          const tx = await governanceContract.vote(proposalId, support)
+          showInfo("Transaction sent. Waiting for confirmation...")
+
+          await tx.wait()
+          showSuccess(`Vote cast successfully!`)
+
+          userVotedProposals.set(proposalId.toString(), support)
+
+          await loadProposals()
+        } catch (error) {
+          let errorMessage = "Failed to vote: "
+
+          if (error.message.includes("Already voted")) {
+            errorMessage += "You have already voted on this proposal."
+          } else if (error.message.includes("Proposal not active")) {
+            errorMessage += "This proposal is no longer active for voting."
+          } else if (error.message.includes("Voting period ended")) {
+            errorMessage += "The voting period for this proposal has ended."
+          } else if (error.message.includes("No voting power")) {
+            errorMessage += "You need GRN tokens to vote."
+          } else if (error.message.includes("user rejected transaction")) {
+            errorMessage += "Transaction was cancelled."
+          } else if (error.reason) {
+            errorMessage += error.reason
+          } else {
+            errorMessage += error.message
+          }
+
+          showError(errorMessage)
+        }
+      }
+
+      async function executeProposal(proposalId) {
+        try {
+          showInfo(`Executing proposal #${proposalId}...`)
+          const tx = await governanceContract.executeProposal(proposalId)
+          showInfo("Transaction sent. Waiting for confirmation...")
+
+          await tx.wait()
+          showSuccess(`Proposal #${proposalId} executed successfully!`)
+
+          await loadProposals()
+        } catch (error) {
+          let errorMessage = "Failed to execute proposal: "
+
+          if (error.message.includes("Proposal not active")) {
+            errorMessage += "This proposal is not in an active state."
+          } else if (error.message.includes("Voting period not ended")) {
+            errorMessage += "The voting period is still ongoing."
+          } else if (error.message.includes("user rejected transaction")) {
+            errorMessage += "Transaction was cancelled."
+          } else if (error.reason) {
+            errorMessage += error.reason
+          } else {
+            errorMessage += error.message
+          }
+
+          showError(errorMessage)
+        }
+      }
+
+      function showError(message) {
+        const result = document.getElementById("createProposalResult")
+        result.innerHTML = `<div class="error">${message}</div>`
+      }
+
+      function showSuccess(message) {
+        const result = document.getElementById("createProposalResult")
+        result.innerHTML = `<div class="success">${message}</div>`
+      }
+
+      function showInfo(message) {
+        const result = document.getElementById("createProposalResult")
+        result.innerHTML = `<div style="color: #0066cc; background-color: #e6f3ff; padding: 10px; border-radius: 5px; margin: 10px 0;">${message}</div>`
+      }
+
+      window.addEventListener("load", async () => {
+        if (window.ethereum && window.ethereum.selectedAddress) {
+          await connectWallet()
+          await loadProposals()
+        }
+      })
+    </script>
+  </body>
+</html>

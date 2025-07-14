@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex's Tech Tutorials - Video Gallery</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        .status.subscribed {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+        .status.not-subscribed {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .video-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        .video-thumbnail {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .video-info {
+            padding: 20px;
+        }
+        .video-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin: 0 0 10px 0;
+        }
+        .video-description {
+            color: #666;
+            line-height: 1.5;
+            margin: 0 0 15px 0;
+        }
+        .video-duration {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            display: inline-block;
+        }
+        .access-denied {
+            text-align: center;
+            padding: 50px;
+            color: #856404;
+        }
+        .access-denied h2 {
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        .access-denied p {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+        .subscribe-link {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+        .subscribe-link:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
+        }
+        .video-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+        .modal-content {
+            position: relative;
+            margin: 5% auto;
+            width: 90%;
+            max-width: 800px;
+        }
+        .modal-video {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        .close-modal {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-modal:hover {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎥 Alex's Tech Tutorials</h1>
+        <p>Premium Video Content for Subscribers</p>
+    </div>
+    
+    <div class="container">
+        <h2>🔐 Subscription Access Control</h2>
+        <div id="connectionStatus" class="status disconnected">Not Connected</div>
+        <button onclick="connectWallet()" id="connectBtn">Connect MetaMask</button>
+        
+        <div id="subscriptionStatus" style="display: none;">
+            <div id="subscriptionInfo"></div>
+        </div>
+    </div>
+
+    <div id="videoGallery" style="display: none;">
+        <div class="container">
+            <h2>📚 Video Library</h2>
+            <p>Welcome to the exclusive video content! Here are the latest tutorials:</p>
+        </div>
+        
+        <div class="video-grid" id="videoGrid">
+            <!-- Video cards will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <div id="accessDenied" style="display: none;">
+        <div class="container">
+            <div class="access-denied">
+                <h2>🔒 Subscription Required</h2>
+                <p>You need an active subscription to access this exclusive video content.</p>
+                <p>Subscribe to Alex's Tech Tutorials to unlock all premium videos!</p>
+                <a href="subscription-test.html" class="subscribe-link">Subscribe Now</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div id="videoModal" class="video-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeVideoModal()">&times;</span>
+            <video id="modalVideo" class="modal-video" controls>
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        // Contract addresses
+        const SUBSCRIPTION_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+        const CREATOR_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; // Alex's address
+        
+        // Contract ABI (simplified)
+        const SUBSCRIPTION_ABI = [
+            "function isSubscriptionActive(address subscriber, address creator) external view returns (bool)",
+            "function subscriptions(address, address) external view returns (uint256, bool, bool)",
+            "function getCreatorInfo(address creator) external view returns (bool, string, uint256, uint256, uint256, uint256)"
+        ];
+
+        let provider;
+        let signer;
+        let subscriptionContract;
+        let userAccount;
+
+        // Video data (in a real app, this would come from a database)
+        const videos = [
+            {
+                id: 1,
+                title: "Luzerne Lake",
+                description: "Beautiful scenic views of Lake Lucerne in Switzerland, showcasing the crystal clear waters and surrounding mountains.",
+                filename: "1.mov",
+                duration: "15:30"
+            },
+            {
+                id: 2,
+                title: "View from Lauterbrunnen Waterfall",
+                description: "Breathtaking perspective from one of Switzerland's most famous waterfalls in the stunning Lauterbrunnen valley.",
+                filename: "2.mov",
+                duration: "22:45"
+            },
+            {
+                id: 3,
+                title: "Driving in Lauterbrunnen",
+                description: "First-person driving experience through the picturesque Lauterbrunnen valley with its dramatic cliffs and waterfalls.",
+                filename: "3.mov",
+                duration: "18:20"
+            }
+        ];
+
+        async function connectWallet() {
+            try {
+                if (!window.ethereum) {
+                    throw new Error("MetaMask not found!");
+                }
+
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAccount = await signer.getAddress();
+
+                subscriptionContract = new ethers.Contract(SUBSCRIPTION_ADDRESS, SUBSCRIPTION_ABI, provider);
+
+                document.getElementById("connectionStatus").textContent = `Connected: ${userAccount}`;
+                document.getElementById("connectionStatus").className = "status connected";
+                document.getElementById("connectBtn").disabled = true;
+                document.getElementById("subscriptionStatus").style.display = "block";
+
+                await checkSubscriptionStatus();
+            } catch (error) {
+                console.error("Connection error:", error);
+                document.getElementById("connectionStatus").textContent = `Connection failed: ${error.message}`;
+                document.getElementById("connectionStatus").className = "status disconnected";
+            }
+        }
+
+        async function checkSubscriptionStatus() {
+            try {
+                console.log(`Checking subscription for user ${userAccount} to creator ${CREATOR_ADDRESS}`);
+                
+                // Check if user has active subscription
+                const isSubscribed = await subscriptionContract.isSubscriptionActive(userAccount, CREATOR_ADDRESS);
+                console.log("Subscription status:", isSubscribed);
+
+                if (isSubscribed) {
+                    // Get subscription details
+                    const subscription = await subscriptionContract.subscriptions(userAccount, CREATOR_ADDRESS);
+                    const expirationTime = new Date(subscription[0].toNumber() * 1000);
+                    const isYearly = subscription[2];
+
+                    document.getElementById("subscriptionInfo").innerHTML = `
+                        <div class="status subscribed">
+                            ✅ Active ${isYearly ? 'Yearly' : 'Monthly'} Subscription
+                            <br>Expires: ${expirationTime.toLocaleDateString()}
+                        </div>
+                    `;
+
+                    // Show video gallery
+                    document.getElementById("videoGallery").style.display = "block";
+                    document.getElementById("accessDenied").style.display = "none";
+                    loadVideoGallery();
+                } else {
+                    document.getElementById("subscriptionInfo").innerHTML = `
+                        <div class="status not-subscribed">
+                            ❌ No Active Subscription
+                            <br>Subscribe to access premium video content
+                        </div>
+                    `;
+
+                    // Show access denied
+                    document.getElementById("videoGallery").style.display = "none";
+                    document.getElementById("accessDenied").style.display = "block";
+                }
+            } catch (error) {
+                console.error("Subscription check error:", error);
+                document.getElementById("subscriptionInfo").innerHTML = `
+                    <div class="status not-subscribed">
+                        ❌ Error checking subscription status
+                        <br>${error.message}
+                    </div>
+                `;
+                document.getElementById("accessDenied").style.display = "block";
+            }
+        }
+
+        function loadVideoGallery() {
+            const videoGrid = document.getElementById("videoGrid");
+            videoGrid.innerHTML = "";
+
+            videos.forEach(video => {
+                const videoCard = document.createElement("div");
+                videoCard.className = "video-card";
+                videoCard.innerHTML = `
+                    <video class="video-thumbnail" onclick="openVideoModal('${video.filename}')" preload="metadata">
+                        <source src="../media/${video.filename}" type="video/mp4">
+                        <source src="../media/${video.filename}" type="video/quicktime">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="video-info">
+                        <div class="video-title">${video.title}</div>
+                        <div class="video-description">${video.description}</div>
+                        <div class="video-duration">${video.duration}</div>
+                    </div>
+                `;
+                videoGrid.appendChild(videoCard);
+            });
+        }
+
+        function openVideoModal(filename) {
+            const modal = document.getElementById("videoModal");
+            const modalVideo = document.getElementById("modalVideo");
+            
+            modalVideo.src = `../media/${filename}`;
+            modal.style.display = "block";
+            
+            // Play video when modal opens
+            modalVideo.play();
+        }
+
+        function closeVideoModal() {
+            const modal = document.getElementById("videoModal");
+            const modalVideo = document.getElementById("modalVideo");
+            
+            modal.style.display = "none";
+            modalVideo.pause();
+            modalVideo.src = "";
+        }
+
+        // Close modal when clicking outside the video
+        window.onclick = function(event) {
+            const modal = document.getElementById("videoModal");
+            if (event.target === modal) {
+                closeVideoModal();
+            }
+        }
+
+        // Auto-connect if already connected
+        window.addEventListener('load', async () => {
+            if (window.ethereum && window.ethereum.selectedAddress) {
+                await connectWallet();
+            }
+        });
+    </script>
+</body>
+</html>
