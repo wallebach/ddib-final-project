@@ -5,70 +5,236 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Platform Governance Test</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="config.js"></script>
     <style>
+      :root {
+        --primary-color: #1ce783;
+        --primary-hover: #16c46e;
+        --primary-rgb: 28, 231, 131;
+        --container-background: rgba(28, 30, 42, 0.6);
+        --container-accent: rgba(255, 255, 255, 0.05);
+        --text-color: #ffffff;
+        --text-color-secondary: #b8bcc8;
+        --network-selector-bg: rgba(28, 30, 42, 0.8);
+        --network-info-bg: rgba(255, 255, 255, 0.05);
+        --border-color: rgba(255, 255, 255, 0.1);
+        --input-bg: rgba(255, 255, 255, 0.1);
+        --input-border: rgba(255, 255, 255, 0.2);
+      }
+      
       body {
-        font-family: Arial, sans-serif;
+        font-family: 'Graphik', 'Helvetica Neue', Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #0b0d17 0%, #1c1e2a 100%);
+        color: var(--text-color);
+        min-height: 100vh;
+      }
+      
+      /* Navigation */
+      .navbar {
+        background: var(--network-selector-bg);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border-color);
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        transition: all 0.3s ease;
+      }
+
+      .nav-container {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 20px;
-        background-color: #f5f5f5;
+        padding: 0 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 70px;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+
+      .logo:hover {
+        color: var(--primary-hover);
+        transform: scale(1.05);
+      }
+
+      .nav-menu {
+        display: flex;
+        list-style: none;
+        gap: 30px;
+      }
+
+      .nav-menu a {
+        color: var(--text-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        padding: 10px 15px;
+        border-radius: 8px;
+        position: relative;
+      }
+
+      .nav-menu a:hover {
+        color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.1);
+      }
+
+      .nav-menu a.active {
+        color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.2);
+      }
+
+      .mobile-menu-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--text-color);
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+
+      @media (max-width: 768px) {
+        .nav-menu {
+          position: fixed;
+          top: 70px;
+          left: -100%;
+          width: 100%;
+          height: calc(100vh - 70px);
+          background: var(--network-selector-bg);
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          padding-top: 50px;
+          transition: left 0.3s ease;
+        }
+
+        .nav-menu.active {
+          left: 0;
+        }
+
+        .mobile-menu-toggle {
+          display: block;
+        }
+      }
+      
+      .network-selector {
+        background: var(--network-selector-bg);
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
+        backdrop-filter: blur(10px);
+        color: var(--text-color);
+        margin-top: 70px;
+      }
+      .network-selector select {
+        padding: 8px 12px;
+        border: 1px solid var(--input-border);
+        border-radius: 8px;
+        font-size: 14px;
+        margin-left: 10px;
+        background: var(--input-bg);
+        color: var(--text-color);
+        backdrop-filter: blur(10px);
+      }
+      .network-info {
+        margin-top: 10px;
+        padding: 10px;
+        background: var(--network-info-bg);
+        border-radius: 8px;
+        font-size: 14px;
+        color: var(--text-color-secondary);
       }
       .container {
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
+        background: var(--container-background);
+        padding: 30px;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+        margin: 20px;
       }
-      h1,
+      h1 {
+        color: #000000;
+        text-align: center;
+        font-size: 2.5em;
+        font-weight: 700;
+        margin-bottom: 0;
+        padding: 40px 20px 20px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+        letter-spacing: -1px;
+      }
       h2 {
-        color: #333;
+        color: var(--text-color);
+        font-weight: 600;
       }
       .status {
-        padding: 10px;
-        border-radius: 5px;
-        margin: 10px 0;
-        font-weight: bold;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-weight: 600;
+        text-align: center;
+        backdrop-filter: blur(10px);
       }
       .status.connected {
-        background-color: #d4edda;
-        color: #155724;
+        background: rgba(var(--primary-rgb), 0.2);
+        color: var(--primary-color);
+        border: 1px solid rgba(var(--primary-rgb), 0.3);
       }
       .status.disconnected {
-        background-color: #f8d7da;
-        color: #721c24;
+        background: rgba(255, 107, 107, 0.2);
+        color: #ff6b6b;
+        border: 1px solid rgba(255, 107, 107, 0.3);
       }
       button {
-        background-color: #007bff;
-        color: white;
+        background: var(--primary-color);
+        color: #000000;
         border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
+        padding: 12px 24px;
+        border-radius: 8px;
         cursor: pointer;
         margin: 5px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        letter-spacing: 0.5px;
       }
       button:hover {
-        background-color: #0056b3;
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.3);
       }
       button:disabled {
-        background-color: #6c757d;
+        background: rgba(108, 117, 125, 0.5);
+        color: rgba(255, 255, 255, 0.5);
         cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
       input,
       textarea {
         width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
+        padding: 12px;
+        border: 1px solid var(--input-border);
+        border-radius: 8px;
         margin: 5px 0;
         box-sizing: border-box;
+        background: var(--input-bg);
+        color: var(--text-color);
+        backdrop-filter: blur(10px);
       }
       .proposal {
-        border: 1px solid #ddd;
-        padding: 15px;
-        margin: 10px 0;
-        border-radius: 5px;
-        background-color: #f9f9f9;
+        border: 1px solid var(--border-color);
+        padding: 20px;
+        margin: 15px 0;
+        border-radius: 12px;
+        background: var(--container-accent);
+        backdrop-filter: blur(10px);
       }
       .proposal-votes {
         display: flex;
@@ -97,6 +263,32 @@
     </style>
   </head>
   <body>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <a href="index.html" class="logo">Subscription Platform</a>
+        <ul class="nav-menu">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="governance-test.html" class="active">Governance</a></li>
+          <li><a href="subscription-test.html">Subscription</a></li>
+          <li><a href="video-gallery.html">Video Gallery</a></li>
+          <li><a href="about.html">About</a></li>
+        </ul>
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+      </div>
+    </nav>
+
+    <div class="network-selector">
+      <label for="networkSelect">Select Network:</label>
+      <select id="networkSelect" onchange="switchNetwork()">
+        <option value="local">Local Development</option>
+        <option value="sepolia">Sepolia Testnet</option>
+        <option value="fuji">Avalanche Fuji</option>
+        <option value="uzh">UZH_ETH_PoS</option>
+      </select>
+      <div id="networkInfo" class="network-info"></div>
+    </div>
+    
     <h1>Platform Governance Test Interface</h1>
 
     <div class="container">
@@ -133,8 +325,9 @@
     </div>
 
     <script>
-      const GOVERNANCE_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
-      const GRN_TOKEN_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+      // Contract addresses are now dynamically loaded from config
+      let GOVERNANCE_ADDRESS = NetworkUtils.getContractAddress('PlatformGovernance');
+      let GRN_TOKEN_ADDRESS = NetworkUtils.getContractAddress('GRNToken');
 
       const GOVERNANCE_ABI = [
         "function createProposal(string memory description) external returns (uint256)",
@@ -160,11 +353,59 @@
       let grnTokenContract
       let userAccount
       let userVotedProposals = new Map()
+      
+      // Network switching functions
+      function updateNetworkInfo() {
+        const config = NetworkUtils.getNetworkConfig();
+        const theme = ThemeUtils.getCurrentTheme();
+        const networkInfo = document.getElementById('networkInfo');
+        networkInfo.innerHTML = `<strong>Network:</strong> ${config.name} | <strong>Chain ID:</strong> ${config.chainId} | <strong>Theme:</strong> ${theme.name}`;
+      }
+      
+      async function switchNetwork() {
+        const networkSelect = document.getElementById('networkSelect');
+        const selectedNetwork = networkSelect.value;
+        
+        try {
+          await NetworkUtils.switchNetwork(selectedNetwork);
+          
+          // Update contract addresses
+          GOVERNANCE_ADDRESS = NetworkUtils.getContractAddress('PlatformGovernance');
+          GRN_TOKEN_ADDRESS = NetworkUtils.getContractAddress('GRNToken');
+          
+          updateNetworkInfo();
+          
+          // Reconnect to the new network
+          if (userAccount) {
+            await connectWallet();
+          }
+          
+          alert(`Successfully switched to ${NetworkUtils.getNetworkConfig().name}`);
+        } catch (error) {
+          console.error('Network switch failed:', error);
+          alert('Failed to switch network: ' + error.message);
+          // Revert select to current network
+          networkSelect.value = NetworkUtils.getCurrentNetwork();
+        }
+      }
+      
+      // Initialize network UI
+      function initializeNetworkUI() {
+        const networkSelect = document.getElementById('networkSelect');
+        networkSelect.value = NetworkUtils.getCurrentNetwork();
+        ThemeUtils.applyTheme();
+        updateNetworkInfo();
+      }
 
       async function connectWallet() {
         try {
           if (!window.ethereum) {
             throw new Error("MetaMask not found!")
+          }
+          
+          // Initialize network UI if not already done
+          if (!document.getElementById('networkSelect').value) {
+            initializeNetworkUI();
           }
 
           provider = new ethers.providers.Web3Provider(window.ethereum)
@@ -344,14 +585,14 @@
         if (hasUserVoted) {
           if (userVoteDirection === true) {
             votingStatusText =
-              "<span style='color: #28a745; font-weight: bold;'>✅ You voted FOR this proposal</span>"
+              "<span style='color: #1ce783; font-weight: bold;'>You voted FOR this proposal</span>"
           } else {
             votingStatusText =
-              "<span style='color: #dc3545; font-weight: bold;'>❌ You voted AGAINST this proposal</span>"
+              "<span style='color: #ff6b6b; font-weight: bold;'>You voted AGAINST this proposal</span>"
           }
         } else if (votingPeriodEnded && state === "Active") {
           votingStatusText =
-            "<span style='color: #ffc107; font-weight: bold;'>⏰ Voting period has ended</span>"
+            "<span style='color: #ffc107; font-weight: bold;'>Voting period has ended</span>"
         } else if (state !== "Active") {
           votingStatusText =
             "<span style='color: #6c757d; font-weight: bold;'>Voting not active</span>"
@@ -490,12 +731,31 @@
         result.innerHTML = `<div style="color: #0066cc; background-color: #e6f3ff; padding: 10px; border-radius: 5px; margin: 10px 0;">${message}</div>`
       }
 
+      // Mobile menu toggle
+      function toggleMobileMenu() {
+        const navMenu = document.querySelector('.nav-menu');
+        navMenu.classList.toggle('active');
+      }
+
       window.addEventListener("load", async () => {
+        // Initialize network UI first
+        initializeNetworkUI();
+        
         if (window.ethereum && window.ethereum.selectedAddress) {
           await connectWallet()
           await loadProposals()
         }
       })
+
+      // Close mobile menu when clicking outside
+      document.addEventListener('click', (e) => {
+        const navMenu = document.querySelector('.nav-menu');
+        const toggle = document.querySelector('.mobile-menu-toggle');
+        
+        if (!navMenu.contains(e.target) && !toggle.contains(e.target)) {
+          navMenu.classList.remove('active');
+        }
+      });
     </script>
   </body>
 </html>

@@ -1,373 +1,786 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alex's Tech Tutorials - Video Gallery</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loading Channel... - Video Gallery</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="config.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+      :root {
+        --primary-color: #1ce783;
+        --primary-hover: #16c46e;
+        --primary-rgb: 28, 231, 131;
+        --container-background: rgba(28, 30, 42, 0.6);
+        --container-accent: rgba(255, 255, 255, 0.05);
+        --text-color: #ffffff;
+        --text-color-secondary: #b8bcc8;
+        --network-selector-bg: rgba(28, 30, 42, 0.8);
+        --network-info-bg: rgba(255, 255, 255, 0.05);
+        --border-color: rgba(255, 255, 255, 0.1);
+        --input-bg: rgba(255, 255, 255, 0.1);
+        --input-border: rgba(255, 255, 255, 0.2);
+        --tab-bg: rgba(28, 30, 42, 0.6);
+        --tab-hover-bg: rgba(255, 255, 255, 0.05);
+      }
+
+      body {
+        font-family: "Graphik", "Helvetica Neue", Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #0b0d17 0%, #1c1e2a 100%);
+        color: var(--text-color);
+        min-height: 100vh;
+      }
+      
+      /* Navigation */
+      .navbar {
+        background: var(--network-selector-bg);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border-color);
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        transition: all 0.3s ease;
+      }
+
+      .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 70px;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+
+      .logo:hover {
+        color: var(--primary-hover);
+        transform: scale(1.05);
+      }
+
+      .nav-menu {
+        display: flex;
+        list-style: none;
+        gap: 30px;
+      }
+
+      .nav-menu a {
+        color: var(--text-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        padding: 10px 15px;
+        border-radius: 8px;
+        position: relative;
+      }
+
+      .nav-menu a:hover {
+        color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.1);
+      }
+
+      .nav-menu a.active {
+        color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.2);
+      }
+
+      .mobile-menu-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--text-color);
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+
+      @media (max-width: 768px) {
+        .nav-menu {
+          position: fixed;
+          top: 70px;
+          left: -100%;
+          width: 100%;
+          height: calc(100vh - 70px);
+          background: var(--network-selector-bg);
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          padding-top: 50px;
+          transition: left 0.3s ease;
         }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+
+        .nav-menu.active {
+          left: 0;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 2.5em;
-            font-weight: bold;
+
+        .mobile-menu-toggle {
+          display: block;
         }
-        .header p {
-            margin: 10px 0 0 0;
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .status {
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            font-weight: bold;
-            text-align: center;
-        }
-        .status.connected {
-            background-color: #d4edda;
-            color: #155724;
-            border: 2px solid #c3e6cb;
-        }
-        .status.disconnected {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 2px solid #f5c6cb;
-        }
-        .status.subscribed {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 2px solid #bee5eb;
-        }
-        .status.not-subscribed {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 2px solid #ffeaa7;
-        }
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        button:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-            margin-top: 30px;
-        }
-        .video-card {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        .video-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-        }
-        .video-thumbnail {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            cursor: pointer;
-        }
-        .video-info {
-            padding: 20px;
-        }
-        .video-title {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #333;
-            margin: 0 0 10px 0;
-        }
-        .video-description {
-            color: #666;
-            line-height: 1.5;
-            margin: 0 0 15px 0;
-        }
-        .video-duration {
-            background: #667eea;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 0.9em;
-            display: inline-block;
-        }
-        .access-denied {
-            text-align: center;
-            padding: 50px;
-            color: #856404;
-        }
-        .access-denied h2 {
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
-        .access-denied p {
-            font-size: 1.1em;
-            margin-bottom: 30px;
-        }
-        .subscribe-link {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            text-decoration: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-weight: bold;
-            display: inline-block;
-            transition: transform 0.2s;
-        }
-        .subscribe-link:hover {
-            transform: translateY(-2px);
-            text-decoration: none;
-            color: white;
-        }
-        .video-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.9);
-        }
-        .modal-content {
-            position: relative;
-            margin: 5% auto;
-            width: 90%;
-            max-width: 800px;
-        }
-        .modal-video {
-            width: 100%;
-            height: auto;
-            border-radius: 10px;
-        }
-        .close-modal {
-            position: absolute;
-            top: -40px;
-            right: 0;
-            color: white;
-            font-size: 30px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close-modal:hover {
-            opacity: 0.7;
-        }
+      }
+      
+      .network-selector {
+        background: var(--network-selector-bg);
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
+        backdrop-filter: blur(10px);
+        color: var(--text-color);
+        margin-top: 70px;
+      }
+      .network-selector select {
+        padding: 8px 12px;
+        border: 1px solid var(--input-border);
+        border-radius: 8px;
+        font-size: 14px;
+        margin-left: 10px;
+        background: var(--input-bg);
+        color: var(--text-color);
+        backdrop-filter: blur(10px);
+      }
+      .network-info {
+        margin-top: 10px;
+        padding: 10px;
+        background: var(--network-info-bg);
+        border-radius: 8px;
+        font-size: 14px;
+        color: var(--text-color-secondary);
+      }
+      .header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          var(--primary-color) 100%
+        );
+        color: #000000;
+        padding: 40px 20px;
+        text-align: center;
+        margin-bottom: 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 2.8em;
+        font-weight: 800;
+        color: #000000;
+        text-shadow: none;
+        letter-spacing: -1px;
+      }
+      .header p {
+        margin: 10px 0 0 0;
+        font-size: 1.1em;
+        color: #000000;
+        opacity: 0.8;
+        font-weight: 400;
+      }
+      .container {
+        background: var(--container-background);
+        padding: 30px;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+        margin: 20px;
+      }
+      .status {
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-weight: 600;
+        text-align: center;
+        backdrop-filter: blur(10px);
+      }
+      .status.connected {
+        background: rgba(var(--primary-rgb), 0.2);
+        color: var(--primary-color);
+        border: 1px solid rgba(var(--primary-rgb), 0.3);
+      }
+      .status.disconnected {
+        background: rgba(255, 107, 107, 0.2);
+        color: #ff6b6b;
+        border: 1px solid rgba(255, 107, 107, 0.3);
+      }
+      .status.subscribed {
+        background: rgba(var(--primary-rgb), 0.2);
+        color: var(--primary-color);
+        border: 1px solid rgba(var(--primary-rgb), 0.3);
+      }
+      .status.not-subscribed {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+      }
+      button {
+        background: var(--primary-color);
+        color: #000000;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        letter-spacing: 0.5px;
+      }
+      button:hover {
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.3);
+      }
+      button:disabled {
+        background: rgba(108, 117, 125, 0.5);
+        color: rgba(255, 255, 255, 0.5);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+      .video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px;
+        padding: 20px 0;
+      }
+      .video-card {
+        background: var(--container-background);
+        border-radius: 12px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+      }
+      .video-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        border-color: rgba(var(--primary-rgb), 0.3);
+      }
+      .video-thumbnail {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        cursor: pointer;
+      }
+      .video-info {
+        padding: 20px;
+      }
+      .video-title {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0 0 10px 0;
+        line-height: 1.3;
+      }
+      .video-description {
+        color: var(--text-color-secondary);
+        line-height: 1.5;
+        margin: 0 0 15px 0;
+        font-size: 0.95em;
+      }
+      .video-duration {
+        background: rgba(var(--primary-rgb), 0.2);
+        color: var(--primary-color);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        display: inline-block;
+        font-weight: 500;
+      }
+      .access-denied {
+        text-align: center;
+        padding: 60px 20px;
+        color: #ffffff;
+      }
+      .access-denied h2 {
+        margin-bottom: 20px;
+        font-size: 2.2em;
+        color: var(--text-color);
+        font-weight: 600;
+      }
+      .access-denied p {
+        font-size: 1.1em;
+        margin-bottom: 30px;
+        color: var(--text-color-secondary);
+      }
+      .subscribe-link {
+        background: var(--primary-color);
+        color: #000000;
+        text-decoration: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        display: inline-block;
+        transition: all 0.3s ease;
+        letter-spacing: 0.5px;
+      }
+      .subscribe-link:hover {
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: #000000;
+        box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.3);
+      }
+      .video-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(11, 13, 23, 0.95);
+        backdrop-filter: blur(10px);
+      }
+      .modal-content {
+        position: relative;
+        margin: 5% auto;
+        width: 90%;
+        max-width: 900px;
+        background: var(--container-background);
+        border-radius: 12px;
+        padding: 20px;
+        backdrop-filter: blur(15px);
+        border: 1px solid var(--border-color);
+      }
+      .modal-video {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+      }
+      .close-modal {
+        position: absolute;
+        top: -10px;
+        right: 10px;
+        color: var(--text-color);
+        font-size: 28px;
+        font-weight: 300;
+        cursor: pointer;
+      }
+      .close-modal:hover {
+        opacity: 0.7;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <a href="index.html" class="logo">Subscription Platform</a>
+        <ul class="nav-menu">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="governance-test.html">Governance</a></li>
+          <li><a href="subscription-test.html">Subscription</a></li>
+          <li><a href="video-gallery.html" class="active">Video Gallery</a></li>
+          <li><a href="about.html">About</a></li>
+        </ul>
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+      </div>
+    </nav>
+
+    <div class="network-selector">
+      <label for="networkSelect">Select Network:</label>
+      <select id="networkSelect" onchange="switchNetwork()">
+        <option value="local">Local Development</option>
+        <option value="sepolia">Sepolia Testnet</option>
+        <option value="fuji">Avalanche Fuji</option>
+        <option value="uzh">UZH_ETH_PoS</option>
+      </select>
+      <div id="networkInfo" class="network-info"></div>
+    </div>
+
     <div class="header">
-        <h1>🎥 Alex's Tech Tutorials</h1>
-        <p>Premium Video Content for Subscribers</p>
+      <h1 id="channelTitle">Loading Channel...</h1>
+      <p id="channelSubtitle"></p>
     </div>
-    
+
+    <div id="videoGallery" style="display: none">
+      <div class="video-grid" id="videoGrid">
+        <!-- Video cards will be dynamically loaded here -->
+      </div>
+    </div>
+
+    <div id="accessDenied" style="display: none">
+      <div class="container">
+        <div class="access-denied">
+          <h2>Subscription Required</h2>
+          <p>
+            You need an active subscription to access this exclusive video
+            content.
+          </p>
+          <a href="subscription-test.html" class="subscribe-link"
+            >Subscribe Now</a
+          >
+        </div>
+      </div>
+    </div>
+
     <div class="container">
-        <h2>🔐 Subscription Access Control</h2>
-        <div id="connectionStatus" class="status disconnected">Not Connected</div>
-        <button onclick="connectWallet()" id="connectBtn">Connect MetaMask</button>
-        
-        <div id="subscriptionStatus" style="display: none;">
-            <div id="subscriptionInfo"></div>
-        </div>
-    </div>
+      <h2>Subscription Access Control</h2>
+      <div id="connectionStatus" class="status disconnected">Not Connected</div>
+      <button onclick="connectWallet()" id="connectBtn">
+        Connect MetaMask
+      </button>
 
-    <div id="videoGallery" style="display: none;">
-        <div class="container">
-            <h2>📚 Video Library</h2>
-            <p>Welcome to the exclusive video content! Here are the latest tutorials:</p>
-        </div>
-        
-        <div class="video-grid" id="videoGrid">
-            <!-- Video cards will be dynamically loaded here -->
-        </div>
-    </div>
-
-    <div id="accessDenied" style="display: none;">
-        <div class="container">
-            <div class="access-denied">
-                <h2>🔒 Subscription Required</h2>
-                <p>You need an active subscription to access this exclusive video content.</p>
-                <p>Subscribe to Alex's Tech Tutorials to unlock all premium videos!</p>
-                <a href="subscription-test.html" class="subscribe-link">Subscribe Now</a>
-            </div>
-        </div>
+      <div id="subscriptionStatus" style="display: none">
+        <div id="subscriptionInfo"></div>
+      </div>
     </div>
 
     <!-- Video Modal -->
     <div id="videoModal" class="video-modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeVideoModal()">&times;</span>
-            <video id="modalVideo" class="modal-video" controls>
-                Your browser does not support the video tag.
-            </video>
-        </div>
+      <div class="modal-content">
+        <span class="close-modal" onclick="closeVideoModal()">&times;</span>
+        <video id="modalVideo" class="modal-video" controls>
+          Your browser does not support the video tag.
+        </video>
+      </div>
     </div>
 
     <script>
-        // Contract addresses
-        const SUBSCRIPTION_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
-        const CREATOR_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; // Alex's address
-        
-        // Contract ABI (simplified)
-        const SUBSCRIPTION_ABI = [
-            "function isSubscriptionActive(address subscriber, address creator) external view returns (bool)",
-            "function subscriptions(address, address) external view returns (uint256, bool, bool)",
-            "function getCreatorInfo(address creator) external view returns (bool, string, uint256, uint256, uint256, uint256)"
-        ];
+      // Contract addresses are now dynamically loaded from config
+      let SUBSCRIPTION_ADDRESS = NetworkUtils.getContractAddress(
+        "SubscriptionPlatform"
+      )
+      let CREATOR_ADDRESS = null // Will be loaded dynamically from contract
 
-        let provider;
-        let signer;
-        let subscriptionContract;
-        let userAccount;
+      // Contract ABI (simplified)
+      const SUBSCRIPTION_ABI = [
+        "function isSubscriptionActive(address subscriber, address creator) external view returns (bool)",
+        "function subscriptions(address, address) external view returns (uint256, bool, bool)",
+        "function getCreatorInfo(address creator) external view returns (bool, string, uint256, uint256, uint256, uint256)",
+        "function owner() external view returns (address)",
+      ]
 
-        // Video data (in a real app, this would come from a database)
-        const videos = [
-            {
-                id: 1,
-                title: "Luzerne Lake",
-                description: "Beautiful scenic views of Lake Lucerne in Switzerland, showcasing the crystal clear waters and surrounding mountains.",
-                filename: "1.mov",
-                duration: "15:30"
-            },
-            {
-                id: 2,
-                title: "View from Lauterbrunnen Waterfall",
-                description: "Breathtaking perspective from one of Switzerland's most famous waterfalls in the stunning Lauterbrunnen valley.",
-                filename: "2.mov",
-                duration: "22:45"
-            },
-            {
-                id: 3,
-                title: "Driving in Lauterbrunnen",
-                description: "First-person driving experience through the picturesque Lauterbrunnen valley with its dramatic cliffs and waterfalls.",
-                filename: "3.mov",
-                duration: "18:20"
-            }
-        ];
+      let provider
+      let signer
+      let subscriptionContract
+      let userAccount
+      let contractDeployer = null // Will store the deployer address from contract
+      let creatorName = null // Will store the creator's name from contract
 
-        async function connectWallet() {
-            try {
-                if (!window.ethereum) {
-                    throw new Error("MetaMask not found!");
-                }
+      // Network switching functions
+      function updateNetworkInfo() {
+        const config = NetworkUtils.getNetworkConfig()
+        const theme = ThemeUtils.getCurrentTheme()
+        const networkInfo = document.getElementById("networkInfo")
+        networkInfo.innerHTML = `<strong>Network:</strong> ${config.name} | <strong>Chain ID:</strong> ${config.chainId} | <strong>Theme:</strong> ${theme.name}`
+      }
 
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                userAccount = await signer.getAddress();
+      async function switchNetwork() {
+        const networkSelect = document.getElementById("networkSelect")
+        const selectedNetwork = networkSelect.value
 
-                subscriptionContract = new ethers.Contract(SUBSCRIPTION_ADDRESS, SUBSCRIPTION_ABI, provider);
+        try {
+          await NetworkUtils.switchNetwork(selectedNetwork)
 
-                document.getElementById("connectionStatus").textContent = `Connected: ${userAccount}`;
-                document.getElementById("connectionStatus").className = "status connected";
-                document.getElementById("connectBtn").disabled = true;
-                document.getElementById("subscriptionStatus").style.display = "block";
+          // Update contract addresses
+          SUBSCRIPTION_ADDRESS = NetworkUtils.getContractAddress(
+            "SubscriptionPlatform"
+          )
+          CREATOR_ADDRESS = null // Reset creator address
+          contractDeployer = null // Reset deployer
+          creatorName = null // Reset creator name
 
-                await checkSubscriptionStatus();
-            } catch (error) {
-                console.error("Connection error:", error);
-                document.getElementById("connectionStatus").textContent = `Connection failed: ${error.message}`;
-                document.getElementById("connectionStatus").className = "status disconnected";
-            }
+          // Reset channel title and page title while loading
+          document.getElementById("channelTitle").textContent =
+            "Loading Channel..."
+          document.getElementById("channelSubtitle").textContent = ""
+          document.title = "Loading Channel... - Video Gallery"
+
+          updateNetworkInfo()
+
+          // Reconnect to the new network
+          if (userAccount) {
+            await connectWallet()
+          }
+
+          alert(
+            `Successfully switched to ${NetworkUtils.getNetworkConfig().name}`
+          )
+        } catch (error) {
+          console.error("Network switch failed:", error)
+          alert("Failed to switch network: " + error.message)
+          // Revert select to current network
+          networkSelect.value = NetworkUtils.getCurrentNetwork()
         }
+      }
 
-        async function checkSubscriptionStatus() {
-            try {
-                console.log(`Checking subscription for user ${userAccount} to creator ${CREATOR_ADDRESS}`);
-                
-                // Check if user has active subscription
-                const isSubscribed = await subscriptionContract.isSubscriptionActive(userAccount, CREATOR_ADDRESS);
-                console.log("Subscription status:", isSubscribed);
+      // Initialize network UI
+      function initializeNetworkUI() {
+        const networkSelect = document.getElementById("networkSelect")
+        networkSelect.value = NetworkUtils.getCurrentNetwork()
+        ThemeUtils.applyTheme()
+        updateNetworkInfo()
+      }
 
-                if (isSubscribed) {
-                    // Get subscription details
-                    const subscription = await subscriptionContract.subscriptions(userAccount, CREATOR_ADDRESS);
-                    const expirationTime = new Date(subscription[0].toNumber() * 1000);
-                    const isYearly = subscription[2];
+      // Video data (in a real app, this would come from a database)
+      const videos = [
+        {
+          id: 1,
+          title: "Luzerne Lake",
+          description:
+            "Beautiful scenic views of Lake Lucerne in Switzerland, showcasing the crystal clear waters and surrounding mountains.",
+          filename: "1.mov",
+          duration: "15:30",
+        },
+        {
+          id: 2,
+          title: "View from Lauterbrunnen Waterfall",
+          description:
+            "Breathtaking perspective from one of Switzerland's most famous waterfalls in the stunning Lauterbrunnen valley.",
+          filename: "2.mov",
+          duration: "22:45",
+        },
+        {
+          id: 3,
+          title: "Driving in Lauterbrunnen",
+          description:
+            "First-person driving experience through the picturesque Lauterbrunnen valley with its dramatic cliffs and waterfalls.",
+          filename: "3.mov",
+          duration: "18:20",
+        },
+      ]
 
-                    document.getElementById("subscriptionInfo").innerHTML = `
+      async function connectWallet() {
+        try {
+          if (!window.ethereum) {
+            throw new Error("MetaMask not found!")
+          }
+
+          // Initialize network UI if not already done
+          if (!document.getElementById("networkSelect").value) {
+            initializeNetworkUI()
+          }
+
+          provider = new ethers.providers.Web3Provider(window.ethereum)
+          await provider.send("eth_requestAccounts", [])
+          signer = provider.getSigner()
+          userAccount = await signer.getAddress()
+
+          subscriptionContract = new ethers.Contract(
+            SUBSCRIPTION_ADDRESS,
+            SUBSCRIPTION_ABI,
+            provider
+          )
+
+          document.getElementById(
+            "connectionStatus"
+          ).textContent = `Connected: ${userAccount}`
+          document.getElementById("connectionStatus").className =
+            "status connected"
+          document.getElementById("connectBtn").disabled = true
+          document.getElementById("subscriptionStatus").style.display = "block"
+
+          // Get the deployer address from the contract
+          await loadDeployerAddress()
+          // Load creator information
+          await loadCreatorInfo()
+          await checkSubscriptionStatus()
+        } catch (error) {
+          console.error("Connection error:", error)
+          document.getElementById(
+            "connectionStatus"
+          ).textContent = `Connection failed: ${error.message}`
+          document.getElementById("connectionStatus").className =
+            "status disconnected"
+        }
+      }
+
+      // Function to load deployer address from contract
+      async function loadDeployerAddress() {
+        try {
+          contractDeployer = await subscriptionContract.owner()
+          CREATOR_ADDRESS = contractDeployer
+          console.log("Contract deployer address:", contractDeployer)
+
+          // Update UI to show deployer info
+          const deployerInfo = document.createElement("div")
+          deployerInfo.innerHTML = `<strong>Content Creator Address:</strong> ${contractDeployer}`
+          deployerInfo.style.marginTop = "10px"
+          deployerInfo.style.padding = "10px"
+          deployerInfo.style.backgroundColor = "#f8f9fa"
+          deployerInfo.style.borderRadius = "5px"
+          deployerInfo.style.fontSize = "14px"
+          deployerInfo.id = "deployerInfo"
+
+          // Remove existing deployer info if it exists
+          const existingInfo = document.getElementById("deployerInfo")
+          if (existingInfo) {
+            existingInfo.remove()
+          }
+
+          const container = document.querySelector(".container")
+          container.appendChild(deployerInfo)
+        } catch (error) {
+          console.error("Failed to load deployer address:", error)
+          // Show error in subscription info
+          const subscriptionInfo = document.getElementById("subscriptionInfo")
+          if (subscriptionInfo) {
+            subscriptionInfo.innerHTML =
+              '<div style="color: red;">Failed to load creator information</div>'
+          }
+        }
+      }
+
+      // Function to load creator information from contract
+      async function loadCreatorInfo() {
+        try {
+          if (!CREATOR_ADDRESS) {
+            console.log("Creator address not available yet")
+            return
+          }
+
+          // Get creator information from the contract
+          const creatorInfo = await subscriptionContract.getCreatorInfo(
+            CREATOR_ADDRESS
+          )
+          const isRegistered = creatorInfo[0]
+          const name = creatorInfo[1]
+          const monthlyPrice = creatorInfo[2]
+          const yearlyPrice = creatorInfo[3]
+          const totalEarnings = creatorInfo[4]
+          const subscriberCount = creatorInfo[5]
+
+          console.log("Creator info:", {
+            isRegistered,
+            name,
+            monthlyPrice,
+            yearlyPrice,
+            totalEarnings,
+            subscriberCount,
+          })
+
+          if (isRegistered && name) {
+            creatorName = name
+            // Update the channel title and page title
+            document.getElementById("channelTitle").textContent = `${name}`
+            document.getElementById(
+              "channelSubtitle"
+            ).textContent = `Subscription | Monthly: 10 STR | Yearly: 100 STR`
+            document.title = `${name} - Video Gallery`
+
+            // Update deployer info to show creator name
+            const deployerInfo = document.getElementById("deployerInfo")
+            if (deployerInfo) {
+              deployerInfo.innerHTML = `<strong>Content Creator:</strong> ${name} (${CREATOR_ADDRESS})`
+            }
+          } else {
+            // Creator not registered or no name
+            document.getElementById("channelTitle").textContent =
+              "Unregistered Creator"
+            document.getElementById("channelSubtitle").textContent = ""
+            document.title = "Unregistered Creator - Video Gallery"
+
+            const deployerInfo = document.getElementById("deployerInfo")
+            if (deployerInfo) {
+              deployerInfo.innerHTML = `<strong>Content Creator:</strong> Unregistered (${CREATOR_ADDRESS})`
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load creator information:", error)
+          // Fallback to address-based title
+          document.getElementById("channelTitle").textContent =
+            "Creator Channel"
+          document.getElementById("channelSubtitle").textContent = ""
+          document.title = "Creator Channel - Video Gallery"
+        }
+      }
+
+      async function checkSubscriptionStatus() {
+        try {
+          if (!CREATOR_ADDRESS) {
+            document.getElementById("subscriptionInfo").innerHTML =
+              '<div style="color: orange;">Loading creator information...</div>'
+            return
+          }
+
+          console.log(
+            `Checking subscription for user ${userAccount} to creator ${CREATOR_ADDRESS}`
+          )
+
+          // Check if user is the creator/deployer
+          if (userAccount.toLowerCase() === CREATOR_ADDRESS.toLowerCase()) {
+            const creatorDisplayName = creatorName || "Creator"
+            document.getElementById("subscriptionInfo").innerHTML = `
+                        <div class="status creator-access" style="color: #1ce783; font-weight: bold;">
+                            Creator Access
+                            <br>You are ${creatorDisplayName} and have full access!
+                        </div>
+                    `
+          }
+
+          // Check if user has active subscription
+          const isSubscribed = await subscriptionContract.isSubscriptionActive(
+            userAccount,
+            CREATOR_ADDRESS
+          )
+          console.log("Subscription status:", isSubscribed)
+
+          if (isSubscribed) {
+            // Get subscription details
+            const subscription = await subscriptionContract.subscriptions(
+              userAccount,
+              CREATOR_ADDRESS
+            )
+            const expirationTime = new Date(subscription[0].toNumber() * 1000)
+            const isYearly = subscription[2]
+
+            const creatorDisplayName = creatorName || CREATOR_ADDRESS
+            document.getElementById("subscriptionInfo").innerHTML = `
                         <div class="status subscribed">
-                            ✅ Active ${isYearly ? 'Yearly' : 'Monthly'} Subscription
+                            Active ${
+                              isYearly ? "Yearly" : "Monthly"
+                            } Subscription
                             <br>Expires: ${expirationTime.toLocaleDateString()}
+                            <br><small>Creator: ${creatorDisplayName}</small>
                         </div>
-                    `;
-
-                    // Show video gallery
-                    document.getElementById("videoGallery").style.display = "block";
-                    document.getElementById("accessDenied").style.display = "none";
-                    loadVideoGallery();
-                } else {
-                    document.getElementById("subscriptionInfo").innerHTML = `
+                    `
+          } else {
+            const creatorDisplayName = creatorName || CREATOR_ADDRESS
+            document.getElementById("subscriptionInfo").innerHTML = `
                         <div class="status not-subscribed">
-                            ❌ No Active Subscription
+                            No Active Subscription
                             <br>Subscribe to access premium video content
+                            <br><small>Creator: ${creatorDisplayName}</small>
                         </div>
-                    `;
+                    `
+          }
 
-                    // Show access denied
-                    document.getElementById("videoGallery").style.display = "none";
-                    document.getElementById("accessDenied").style.display = "block";
-                }
-            } catch (error) {
-                console.error("Subscription check error:", error);
-                document.getElementById("subscriptionInfo").innerHTML = `
+          // Always show video gallery regardless of subscription status
+          document.getElementById("videoGallery").style.display = "block"
+          document.getElementById("accessDenied").style.display = "none"
+          loadVideoGallery()
+        } catch (error) {
+          console.error("Subscription check error:", error)
+          document.getElementById("subscriptionInfo").innerHTML = `
                     <div class="status not-subscribed">
                         ❌ Error checking subscription status
                         <br>${error.message}
                     </div>
-                `;
-                document.getElementById("accessDenied").style.display = "block";
-            }
+                `
+          // Always show video gallery even on error
+          document.getElementById("videoGallery").style.display = "block"
+          document.getElementById("accessDenied").style.display = "none"
+          loadVideoGallery()
         }
+      }
 
-        function loadVideoGallery() {
-            const videoGrid = document.getElementById("videoGrid");
-            videoGrid.innerHTML = "";
+      function loadVideoGallery() {
+        const videoGrid = document.getElementById("videoGrid")
+        videoGrid.innerHTML = ""
 
-            videos.forEach(video => {
-                const videoCard = document.createElement("div");
-                videoCard.className = "video-card";
-                videoCard.innerHTML = `
+        videos.forEach((video) => {
+          const videoCard = document.createElement("div")
+          videoCard.className = "video-card"
+          videoCard.innerHTML = `
                     <video class="video-thumbnail" onclick="openVideoModal('${video.filename}')" preload="metadata">
                         <source src="../media/${video.filename}" type="video/mp4">
                         <source src="../media/${video.filename}" type="video/quicktime">
@@ -378,45 +791,64 @@
                         <div class="video-description">${video.description}</div>
                         <div class="video-duration">${video.duration}</div>
                     </div>
-                `;
-                videoGrid.appendChild(videoCard);
-            });
-        }
+                `
+          videoGrid.appendChild(videoCard)
+        })
+      }
 
-        function openVideoModal(filename) {
-            const modal = document.getElementById("videoModal");
-            const modalVideo = document.getElementById("modalVideo");
-            
-            modalVideo.src = `../media/${filename}`;
-            modal.style.display = "block";
-            
-            // Play video when modal opens
-            modalVideo.play();
-        }
+      function openVideoModal(filename) {
+        const modal = document.getElementById("videoModal")
+        const modalVideo = document.getElementById("modalVideo")
 
-        function closeVideoModal() {
-            const modal = document.getElementById("videoModal");
-            const modalVideo = document.getElementById("modalVideo");
-            
-            modal.style.display = "none";
-            modalVideo.pause();
-            modalVideo.src = "";
-        }
+        modalVideo.src = `../media/${filename}`
+        modal.style.display = "block"
 
-        // Close modal when clicking outside the video
-        window.onclick = function(event) {
-            const modal = document.getElementById("videoModal");
-            if (event.target === modal) {
-                closeVideoModal();
-            }
-        }
+        // Play video when modal opens
+        modalVideo.play()
+      }
 
-        // Auto-connect if already connected
-        window.addEventListener('load', async () => {
-            if (window.ethereum && window.ethereum.selectedAddress) {
-                await connectWallet();
-            }
-        });
+      function closeVideoModal() {
+        const modal = document.getElementById("videoModal")
+        const modalVideo = document.getElementById("modalVideo")
+
+        modal.style.display = "none"
+        modalVideo.pause()
+        modalVideo.src = ""
+      }
+
+      // Close modal when clicking outside the video
+      window.onclick = function (event) {
+        const modal = document.getElementById("videoModal")
+        if (event.target === modal) {
+          closeVideoModal()
+        }
+      }
+
+      // Mobile menu toggle
+      function toggleMobileMenu() {
+        const navMenu = document.querySelector('.nav-menu');
+        navMenu.classList.toggle('active');
+      }
+
+      // Auto-connect if already connected
+      window.addEventListener("load", async () => {
+        // Initialize network UI first
+        initializeNetworkUI()
+
+        if (window.ethereum && window.ethereum.selectedAddress) {
+          await connectWallet()
+        }
+      })
+
+      // Close mobile menu when clicking outside
+      document.addEventListener('click', (e) => {
+        const navMenu = document.querySelector('.nav-menu');
+        const toggle = document.querySelector('.mobile-menu-toggle');
+        
+        if (!navMenu.contains(e.target) && !toggle.contains(e.target)) {
+          navMenu.classList.remove('active');
+        }
+      });
     </script>
-</body>
+  </body>
 </html>

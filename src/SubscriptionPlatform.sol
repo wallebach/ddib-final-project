@@ -236,9 +236,7 @@ contract SubscriptionPlatform is Ownable, Pausable, ReentrancyGuard {
     function getCreatorSubscribers(address creator) external view returns (address[] memory) {
         return creatorSubscribers[creator];
     }
-    
-    // Admin functions (removed setSubscriptionPrices since creators set their own)
-    
+        
     function setRevenueSplit(uint256 _creatorBps, uint256 _daoBps, uint256 _grnBps) external onlyOwner {
         require(_creatorBps.add(_daoBps).add(_grnBps) == 10000, "Split must equal 100%");
         creatorRewardBps = _creatorBps;

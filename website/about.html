@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Subscription Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="config.js"></script>
+    <style>
+        :root {
+            --primary-color: #1ce783;
+            --primary-hover: #16c46e;
+            --primary-rgb: 28, 231, 131;
+            --container-background: rgba(28, 30, 42, 0.6);
+            --container-accent: rgba(255, 255, 255, 0.05);
+            --text-color: #ffffff;
+            --text-color-secondary: #b8bcc8;
+            --network-selector-bg: rgba(28, 30, 42, 0.8);
+            --network-info-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(255, 255, 255, 0.1);
+            --input-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Graphik', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0b0d17 0%, #1c1e2a 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: var(--network-selector-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            color: var(--primary-hover);
+            transform: scale(1.05);
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        .nav-menu a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 10px 15px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .nav-menu a:hover {
+            color: var(--primary-color);
+            background: rgba(var(--primary-rgb), 0.1);
+        }
+
+        .nav-menu a.active {
+            color: var(--primary-color);
+            background: rgba(var(--primary-rgb), 0.2);
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Network Selector */
+        .network-selector {
+            background: var(--network-selector-bg);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            color: var(--text-color);
+            margin-top: 70px;
+        }
+
+        .network-selector select {
+            padding: 8px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            font-size: 14px;
+            margin-left: 10px;
+            background: var(--input-bg);
+            color: var(--text-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .network-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: var(--network-info-bg);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-color-secondary);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
+            color: #000000;
+            padding: 80px 20px 40px;
+            text-align: center;
+            margin-bottom: 0;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #000000;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #000000;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .section {
+            margin-bottom: 80px;
+        }
+
+        .section h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: var(--text-color);
+            text-align: center;
+        }
+
+        .section p {
+            font-size: 1.1rem;
+            color: var(--text-color-secondary);
+            line-height: 1.8;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 50px;
+        }
+
+        /* Authors Grid */
+        .authors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .author-card {
+            background: var(--container-background);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .author-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border-color: rgba(var(--primary-rgb), 0.3);
+        }
+
+        .author-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+        }
+
+        .author-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            color: #000000;
+            text-shadow: none;
+        }
+
+        .author-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .author-role {
+            font-size: 1rem;
+            color: var(--primary-color);
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+
+        .author-bio {
+            color: var(--text-color-secondary);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .author-skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .skill-tag {
+            background: rgba(var(--primary-rgb), 0.2);
+            color: var(--primary-color);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* Project Info */
+        .project-info {
+            background: var(--container-background);
+            padding: 50px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            margin-bottom: 60px;
+        }
+
+        .project-info h3 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .project-info p {
+            font-size: 1.1rem;
+            color: var(--text-color-secondary);
+            line-height: 1.8;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .tech-item {
+            background: var(--container-accent);
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .tech-item:hover {
+            border-color: var(--primary-color);
+            background: rgba(var(--primary-rgb), 0.1);
+            color: var(--primary-color);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--container-background);
+            padding: 50px 20px 30px;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-color-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .footer-bottom {
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-color-secondary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-menu {
+                position: fixed;
+                top: 70px;
+                left: -100%;
+                width: 100%;
+                height: calc(100vh - 70px);
+                background: var(--network-selector-bg);
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding-top: 50px;
+                transition: left 0.3s ease;
+            }
+
+            .nav-menu.active {
+                left: 0;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .section h2 {
+                font-size: 2rem;
+            }
+
+            .authors-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .project-info {
+                padding: 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 60px 20px 30px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                padding: 40px 20px;
+            }
+
+            .section h2 {
+                font-size: 1.8rem;
+            }
+
+            .author-card {
+                padding: 30px;
+            }
+
+            .project-info {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Subscription Platform</a>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="governance-test.html">Governance</a></li>
+                <li><a href="subscription-test.html">Subscription</a></li>
+                <li><a href="video-gallery.html">Video Gallery</a></li>
+                <li><a href="about.html" class="active">About</a></li>
+            </ul>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+        </div>
+    </nav>
+
+    <!-- Network Selector -->
+    <div class="network-selector">
+        <label for="networkSelect">Select Network:</label>
+        <select id="networkSelect" onchange="switchNetwork()">
+            <option value="local">Local Development</option>
+            <option value="sepolia">Sepolia Testnet</option>
+            <option value="fuji">Avalanche Fuji</option>
+            <option value="uzh">UZH_ETH_PoS</option>
+        </select>
+        <div id="networkInfo" class="network-info"></div>
+    </div>
+
+    <!-- Header -->
+    <section class="header">
+        <h1>About the Project</h1>
+        <p>Learn about the team behind the Subscription Platform and the technology that powers decentralized content subscriptions.</p>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Project Information -->
+        <section class="section">
+            <div class="project-info">
+                <h3>Subscription Platform</h3>
+                <p>
+                    The Subscription Platform is a decentralized application that revolutionizes content monetization through blockchain technology. 
+                    Built on Ethereum and Avalanche networks, it enables creators to monetize their content through subscription models while 
+                    giving users governance rights through token staking.
+                </p>
+                <p>
+                    Our platform leverages smart contracts to ensure transparent, trustless transactions between creators and subscribers. 
+                    The dual-token system (STR for subscriptions, GRN for governance) creates a sustainable ecosystem where stakeholders 
+                    can participate in platform decision-making while enjoying premium content.
+                </p>
+                <p>
+                    Key features include creator registration, flexible subscription pricing, token staking rewards, democratic governance, 
+                    and multi-network deployment capabilities. The platform is designed to be scalable, secure, and user-friendly.
+                </p>
+                
+                <div class="tech-stack">
+                    <div class="tech-item">Solidity</div>
+                    <div class="tech-item">Foundry</div>
+                    <div class="tech-item">OpenZeppelin</div>
+                    <div class="tech-item">Ethers.js</div>
+                    <div class="tech-item">JavaScript</div>
+                    <div class="tech-item">HTML/CSS</div>
+                    <div class="tech-item">Ethereum</div>
+                    <div class="tech-item">Avalanche</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Authors Section -->
+        <section class="section">
+            <h2>Meet the Team</h2>
+            <p>
+                Our team consists of blockchain developers, smart contract engineers, and web3 enthusiasts 
+                who are passionate about creating decentralized solutions for content creators and their communities.
+            </p>
+            
+            <div class="authors-grid">
+                <div class="author-card">
+                    <div class="author-avatar">KA</div>
+                    <div class="author-name">Khetag Albegov</div>
+                    <div class="author-role">Lead Blockchain Developer</div>
+                    <div class="author-bio">
+                        Experienced blockchain developer specializing in smart contract development and DeFi protocols. 
+                        Passionate about creating decentralized solutions that empower creators and communities.
+                    </div>
+                    <div class="author-skills">
+                        <span class="skill-tag">Solidity</span>
+                        <span class="skill-tag">Smart Contracts</span>
+                        <span class="skill-tag">Web3</span>
+                        <span class="skill-tag">DeFi</span>
+                    </div>
+                </div>
+
+                <div class="author-card">
+                    <div class="author-avatar">SP</div>
+                    <div class="author-name">Summer Program</div>
+                    <div class="author-role">Development Program</div>
+                    <div class="author-bio">
+                        This project was developed as part of a comprehensive blockchain development summer program, 
+                        focusing on practical implementation of decentralized applications and smart contract systems.
+                    </div>
+                    <div class="author-skills">
+                        <span class="skill-tag">Blockchain</span>
+                        <span class="skill-tag">Education</span>
+                        <span class="skill-tag">Mentorship</span>
+                        <span class="skill-tag">Innovation</span>
+                    </div>
+                </div>
+
+                <div class="author-card">
+                    <div class="author-avatar">BC</div>
+                    <div class="author-name">Blockchain Community</div>
+                    <div class="author-role">Open Source Contributors</div>
+                    <div class="author-bio">
+                        Thanks to the broader blockchain community, including OpenZeppelin for secure smart contract libraries, 
+                        Foundry for development tools, and the Ethereum/Avalanche ecosystems for providing robust infrastructure.
+                    </div>
+                    <div class="author-skills">
+                        <span class="skill-tag">Open Source</span>
+                        <span class="skill-tag">Community</span>
+                        <span class="skill-tag">Libraries</span>
+                        <span class="skill-tag">Tools</span>
+                    </div>
+                </div>
+
+                <div class="author-card">
+                    <div class="author-avatar">FS</div>
+                    <div class="author-name">Frontend Specialist</div>
+                    <div class="author-role">UI/UX Developer</div>
+                    <div class="author-bio">
+                        Focused on creating intuitive user interfaces that make blockchain technology accessible to everyone. 
+                        Specializes in responsive design and user experience optimization for Web3 applications.
+                    </div>
+                    <div class="author-skills">
+                        <span class="skill-tag">JavaScript</span>
+                        <span class="skill-tag">UI/UX</span>
+                        <span class="skill-tag">Responsive Design</span>
+                        <span class="skill-tag">Web3 Integration</span>
+                    </div>
+                </div>
+
+                <div class="author-card">
+                    <div class="author-avatar">SC</div>
+                    <div class="author-name">Smart Contract Auditor</div>
+                    <div class="author-role">Security Specialist</div>
+                    <div class="author-bio">
+                        Ensures the security and reliability of smart contracts through comprehensive testing and auditing. 
+                        Committed to following best practices and maintaining high security standards in DeFi applications.
+                    </div>
+                    <div class="author-skills">
+                        <span class="skill-tag">Security</span>
+                        <span class="skill-tag">Testing</span>
+                        <span class="skill-tag">Auditing</span>
+                        <span class="skill-tag">Best Practices</span>
+                    </div>
+                </div>
+
+                <div class="author-card">
+                    <div class="author-avatar">DA</div>
+                    <div class="author-name">DevOps & Architecture</div>
+                    <div class="author-role">Infrastructure Engineer</div>
+                    <div class="author-bio">
+                        Manages deployment processes, network configurations, and infrastructure setup across multiple blockchain networks. 
+                        Ensures scalable and reliable platform operations.
+                    </div>
+                    <div class="author-skills">
+                        <span class="skill-tag">DevOps</span>
+                        <span class="skill-tag">Deployment</span>
+                        <span class="skill-tag">Architecture</span>
+                        <span class="skill-tag">Multi-chain</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="index.html">Home</a>
+                <a href="governance-test.html">Governance</a>
+                <a href="subscription-test.html">Subscription</a>
+                <a href="video-gallery.html">Video Gallery</a>
+                <a href="about.html">About</a>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Subscription Platform. Built with blockchain technology.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Network switching functions
+        function updateNetworkInfo() {
+            const config = NetworkUtils.getNetworkConfig();
+            const theme = ThemeUtils.getCurrentTheme();
+            const networkInfo = document.getElementById('networkInfo');
+            networkInfo.innerHTML = `<strong>Network:</strong> ${config.name} | <strong>Chain ID:</strong> ${config.chainId} | <strong>Theme:</strong> ${theme.name}`;
+        }
+
+        async function switchNetwork() {
+            const networkSelect = document.getElementById('networkSelect');
+            const selectedNetwork = networkSelect.value;
+            
+            try {
+                await NetworkUtils.switchNetwork(selectedNetwork);
+                updateNetworkInfo();
+                alert(`Successfully switched to ${NetworkUtils.getNetworkConfig().name}`);
+            } catch (error) {
+                console.error('Network switch failed:', error);
+                alert('Failed to switch network: ' + error.message);
+                networkSelect.value = NetworkUtils.getCurrentNetwork();
+            }
+        }
+
+        // Initialize network UI
+        function initializeNetworkUI() {
+            const networkSelect = document.getElementById('networkSelect');
+            networkSelect.value = NetworkUtils.getCurrentNetwork();
+            ThemeUtils.applyTheme();
+            updateNetworkInfo();
+        }
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const navMenu = document.querySelector('.nav-menu');
+            navMenu.classList.toggle('active');
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            initializeNetworkUI();
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const navMenu = document.querySelector('.nav-menu');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            
+            if (!navMenu.contains(e.target) && !toggle.contains(e.target)) {
+                navMenu.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
